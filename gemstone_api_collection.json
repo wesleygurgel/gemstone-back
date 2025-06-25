@@ -1,0 +1,637 @@
+{
+  "info": {
+    "name": "Gemstone API Collection",
+    "description": "API collection for the Gemstone e-commerce application",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "description": "JWT Authentication endpoints",
+      "item": [
+        {
+          "name": "Login (Get Token)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/v1/token/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "token"]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
+            },
+            "description": "Get JWT token for authentication"
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/v1/token/refresh/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "token", "refresh"]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh\": \"your_refresh_token_here\"\n}"
+            },
+            "description": "Refresh JWT token"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Core",
+      "description": "Core API endpoints",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/core/health/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "core", "health"]
+            },
+            "description": "Check if the API is running"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Accounts",
+      "description": "User account management endpoints",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/v1/accounts/register/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "accounts", "register"]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"newuser\",\n  \"email\": \"user@example.com\",\n  \"password\": \"securepassword123\",\n  \"password2\": \"securepassword123\",\n  \"first_name\": \"John\",\n  \"last_name\": \"Doe\",\n  \"profile\": {\n    \"phone_number\": \"+1234567890\",\n    \"address\": \"123 Main St\",\n    \"city\": \"New York\",\n    \"state\": \"NY\",\n    \"country\": \"USA\",\n    \"postal_code\": \"10001\"\n  }\n}"
+            },
+            "description": "Register a new user account"
+          }
+        },
+        {
+          "name": "Get User Details",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/accounts/me/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "accounts", "me"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "description": "Get current user details"
+          }
+        },
+        {
+          "name": "Update User Details",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{base_url}}/api/v1/accounts/me/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "accounts", "me"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"John\",\n  \"last_name\": \"Smith\",\n  \"email\": \"john.smith@example.com\"\n}"
+            },
+            "description": "Update current user details"
+          }
+        },
+        {
+          "name": "Get User Profile",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/accounts/me/profile/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "accounts", "me", "profile"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "description": "Get current user profile"
+          }
+        },
+        {
+          "name": "Update User Profile",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{base_url}}/api/v1/accounts/me/profile/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "accounts", "me", "profile"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone_number\": \"+1987654321\",\n  \"address\": \"456 Oak Ave\",\n  \"city\": \"Los Angeles\",\n  \"state\": \"CA\",\n  \"country\": \"USA\",\n  \"postal_code\": \"90001\"\n}"
+            },
+            "description": "Update current user profile"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "description": "Product management endpoints",
+      "item": [
+        {
+          "name": "List Categories",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/products/categories/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "products", "categories"]
+            },
+            "description": "Get a list of all product categories"
+          }
+        },
+        {
+          "name": "Get Category Detail",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/products/categories/jewelry/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "products", "categories", "jewelry"]
+            },
+            "description": "Get details of a specific category including its products"
+          }
+        },
+        {
+          "name": "Create Category (Admin)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/v1/products/categories/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "products", "categories"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Watches\",\n  \"description\": \"Luxury watches collection\"\n}"
+            },
+            "description": "Create a new product category (admin only)"
+          }
+        },
+        {
+          "name": "List Products",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/products/products/?category=jewelry&available=true",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "products", "products"],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "jewelry"
+                },
+                {
+                  "key": "available",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Get a list of products with optional filtering"
+          }
+        },
+        {
+          "name": "Get Product Detail",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/products/products/diamond-ring/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "products", "products", "diamond-ring"]
+            },
+            "description": "Get details of a specific product"
+          }
+        },
+        {
+          "name": "Create Product (Admin)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/v1/products/products/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "products", "products"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Diamond Ring\",\n  \"description\": \"Beautiful diamond ring with 18k gold band\",\n  \"price\": 1999.99,\n  \"stock\": 10,\n  \"available\": true,\n  \"category\": 1,\n  \"featured\": true\n}"
+            },
+            "description": "Create a new product (admin only)"
+          }
+        },
+        {
+          "name": "Upload Product Image (Admin)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/v1/products/products/diamond-ring/upload_image/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "products", "products", "diamond-ring", "upload_image"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": "/path/to/image.jpg"
+                },
+                {
+                  "key": "alt_text",
+                  "value": "Diamond ring front view"
+                },
+                {
+                  "key": "is_main",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Upload an image for a product (admin only)"
+          }
+        },
+        {
+          "name": "Get Product Images",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/products/products/diamond-ring/images/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "products", "products", "diamond-ring", "images"]
+            },
+            "description": "Get all images for a specific product"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Orders",
+      "description": "Order management endpoints",
+      "item": [
+        {
+          "name": "Get User Cart",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/orders/carts/1/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "orders", "carts", "1"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "description": "Get the current user's shopping cart"
+          }
+        },
+        {
+          "name": "Add Item to Cart",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/v1/orders/carts/1/add_item/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "orders", "carts", "1", "add_item"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product\": 1,\n  \"quantity\": 2\n}"
+            },
+            "description": "Add a product to the shopping cart"
+          }
+        },
+        {
+          "name": "Update Cart Item",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/v1/orders/carts/1/update_item/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "orders", "carts", "1", "update_item"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"item_id\": 1,\n  \"quantity\": 3\n}"
+            },
+            "description": "Update the quantity of an item in the cart"
+          }
+        },
+        {
+          "name": "Remove Item from Cart",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/v1/orders/carts/1/remove_item/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "orders", "carts", "1", "remove_item"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"item_id\": 1\n}"
+            },
+            "description": "Remove an item from the cart"
+          }
+        },
+        {
+          "name": "Clear Cart",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/v1/orders/carts/1/clear/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "orders", "carts", "1", "clear"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "description": "Remove all items from the cart"
+          }
+        },
+        {
+          "name": "List Orders",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/orders/orders/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "orders", "orders"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "description": "Get a list of user's orders"
+          }
+        },
+        {
+          "name": "Get Order Detail",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/orders/orders/1/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "orders", "orders", "1"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "description": "Get details of a specific order"
+          }
+        },
+        {
+          "name": "Create Order",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/v1/orders/orders/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "orders", "orders"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shipping_address\": \"123 Main St\",\n  \"shipping_city\": \"New York\",\n  \"shipping_state\": \"NY\",\n  \"shipping_country\": \"USA\",\n  \"shipping_postal_code\": \"10001\",\n  \"shipping_phone\": \"+1234567890\",\n  \"payment_method\": \"credit_card\"\n}"
+            },
+            "description": "Create a new order from the current cart"
+          }
+        },
+        {
+          "name": "Create Payment",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/v1/orders/payments/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "orders", "payments"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order\": 1,\n  \"payment_id\": \"pay_123456789\",\n  \"amount\": 1999.99,\n  \"status\": \"completed\",\n  \"payment_method\": \"credit_card\",\n  \"payment_details\": {\n    \"card_last4\": \"4242\",\n    \"card_brand\": \"Visa\"\n  }\n}"
+            },
+            "description": "Create a payment for an order"
+          }
+        },
+        {
+          "name": "Get Payment Detail",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/orders/payments/1/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "orders", "payments", "1"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "description": "Get details of a specific payment"
+          }
+        }
+      ]
+    },
+    {
+      "name": "API Documentation",
+      "description": "API schema and documentation endpoints",
+      "item": [
+        {
+          "name": "API Schema",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/schema/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "schema"]
+            },
+            "description": "Get the OpenAPI schema for the API"
+          }
+        },
+        {
+          "name": "Swagger UI",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/schema/swagger-ui/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "schema", "swagger-ui"]
+            },
+            "description": "View the API documentation using Swagger UI"
+          }
+        },
+        {
+          "name": "ReDoc",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/schema/redoc/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "schema", "redoc"]
+            },
+            "description": "View the API documentation using ReDoc"
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "your_access_token_here",
+      "type": "string"
+    }
+  ]
+}
