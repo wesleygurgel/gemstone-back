@@ -69,11 +69,14 @@ class ProductViewSet(viewsets.ModelViewSet):
         queryset = super().get_queryset()
         min_price = self.request.query_params.get('min_price')
         max_price = self.request.query_params.get('max_price')
+        category_id = self.request.query_params.get('category_id')
 
         if min_price:
             queryset = queryset.filter(price__gte=min_price)
         if max_price:
             queryset = queryset.filter(price__lte=max_price)
+        if category_id:
+            queryset = queryset.filter(category_id=category_id)
 
         return queryset
 
