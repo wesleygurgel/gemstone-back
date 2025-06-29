@@ -37,6 +37,17 @@ class CategoryViewSet(viewsets.ModelViewSet):
             return [permissions.AllowAny()]
         return [permissions.IsAuthenticated()]
 
+    def get_authenticators(self):
+        http_method = self.request.method.lower()
+
+        # Look up the corresponding action in the action_map
+        if hasattr(self, 'action_map') and http_method in self.action_map:
+            action = self.action_map[http_method]
+            if action in ['list', 'retrieve']:
+                return []
+
+        return super().get_authenticators()
+
 
 @extend_schema_view(
     list=extend_schema(description="List all products"),
@@ -78,6 +89,17 @@ class ProductViewSet(viewsets.ModelViewSet):
             return [permissions.AllowAny()]
         return [permissions.IsAuthenticated()]
 
+    def get_authenticators(self):
+        http_method = self.request.method.lower()
+
+        # Look up the corresponding action in the action_map
+        if hasattr(self, 'action_map') and http_method in self.action_map:
+            action = self.action_map[http_method]
+            if action in ['list', 'retrieve']:
+                return []
+
+        return super().get_authenticators()
+
     @action(detail=True, methods=['post'], parser_classes=[MultiPartParser, FormParser])
     def upload_image(self, request, slug=None):
         """Upload an image to a product"""
@@ -115,3 +137,14 @@ class ProductImageViewSet(viewsets.ModelViewSet):
         if self.action in ['list', 'retrieve']:
             return [permissions.AllowAny()]
         return [permissions.IsAuthenticated()]
+
+    def get_authenticators(self):
+        http_method = self.request.method.lower()
+
+        # Look up the corresponding action in the action_map
+        if hasattr(self, 'action_map') and http_method in self.action_map:
+            action = self.action_map[http_method]
+            if action in ['list', 'retrieve']:
+                return []
+
+        return super().get_authenticators()
