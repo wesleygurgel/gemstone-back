@@ -7,3 +7,4 @@ class OrdersConfig(AppConfig):
 
     def ready(self):
         import orders.admin  # noqa
+        import orders.signals  # noqa

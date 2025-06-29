@@ -1,7 +1,9 @@
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
-from rest_framework import serializers
+from rest_framework import serializers, exceptions
 from rest_framework.validators import UniqueValidator
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.settings import api_settings
 from .models import UserProfile
 
 
@@ -13,7 +15,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     profile = UserProfileSerializer(required=False)
-    
+
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'first_name', 'last_name', 'profile']
@@ -30,35 +32,76 @@ class RegisterSerializer(serializers.ModelSerializer):
         required=True, 
         validators=[validate_password]
     )
-    password2 = serializers.CharField(write_only=True, required=True)
+    password_confirm = serializers.CharField(write_only=True, required=True)
     profile = UserProfileSerializer(required=False)
 
     class Meta:
         model = User
-        fields = ['username', 'password', 'password2', 'email', 'first_name', 'last_name', 'profile']
+        fields = ['email', 'password', 'password_confirm', 'first_name', 'last_name', 'profile']
         extra_kwargs = {
-            'first_name': {'required': True},
-            'last_name': {'required': True}
+            'first_name': {'required': False},
+            'last_name': {'required': False}
         }
 
     def validate(self, attrs):
-        if attrs['password'] != attrs['password2']:
+        if attrs['password'] != attrs['password_confirm']:
             raise serializers.ValidationError({"password": "Password fields didn't match."})
         return attrs
 
     def create(self, validated_data):
         profile_data = validated_data.pop('profile', None)
         password = validated_data.pop('password')
-        password2 = validated_data.pop('password2', None)  # Remove password2 field
-        
+        password_confirm = validated_data.pop('password_confirm', None)  # Remove password_confirm field
+
+        # Set username to email
+        email = validated_data.get('email')
+        validated_data['username'] = email
+
         user = User.objects.create(**validated_data)
         user.set_password(password)
         user.save()
-        
+
         # Create user profile
         if profile_data:
             UserProfile.objects.create(user=user, **profile_data)
         else:
             UserProfile.objects.create(user=user)
-            
+
         return user
+
+
+class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
+    """
+    Custom token serializer that accepts email instead of username
+    """
+    username_field = 'email'
+
+    def validate(self, attrs):
+        # The authenticate call simply passes username and password along
+        # Get the email value and use it as the username
+        email = attrs.get('email')
+
+        # Create a new dictionary with 'username' set to the email value
+        authentication_kwargs = {
+            'username': email,
+            'password': attrs.get('password')
+        }
+
+        # Use Django's authenticate function directly
+        from django.contrib.auth import authenticate
+        self.user = authenticate(request=self.context.get('request'), **authentication_kwargs)
+
+        if not api_settings.USER_AUTHENTICATION_RULE(self.user):
+            raise exceptions.AuthenticationFailed(
+                self.error_messages['no_active_account'],
+                'no_active_account',
+            )
+
+        # Get the token for the user
+        refresh = self.get_token(self.user)
+
+        # Return the token
+        return {
+            'refresh': str(refresh),
+            'access': str(refresh.access_token)
+        }

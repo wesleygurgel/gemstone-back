@@ -26,7 +26,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"admin123\"\n}"
             },
             "description": "Get JWT token for authentication"
           }
@@ -94,7 +94,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"username\": \"newuser\",\n  \"email\": \"user@example.com\",\n  \"password\": \"securepassword123\",\n  \"password2\": \"securepassword123\",\n  \"first_name\": \"John\",\n  \"last_name\": \"Doe\",\n  \"profile\": {\n    \"phone_number\": \"+1234567890\",\n    \"address\": \"123 Main St\",\n    \"city\": \"New York\",\n    \"state\": \"NY\",\n    \"country\": \"USA\",\n    \"postal_code\": \"10001\"\n  }\n}"
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"securepassword123\",\n  \"password_confirm\": \"securepassword123\",\n  \"first_name\": \"John\",\n  \"last_name\": \"Doe\",\n  \"profile\": {\n    \"phone_number\": \"+1234567890\",\n    \"address\": \"123 Main St\",\n    \"city\": \"New York\",\n    \"state\": \"NY\",\n    \"country\": \"USA\",\n    \"postal_code\": \"10001\"\n  }\n}"
             },
             "description": "Register a new user account"
           }
