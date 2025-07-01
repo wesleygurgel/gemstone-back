@@ -10,7 +10,7 @@ from .models import UserProfile
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
-        fields = ['phone_number', 'address', 'city', 'state', 'country', 'postal_code']
+        fields = ['phone_number', 'address', 'city', 'state', 'country', 'postal_code', 'created_at']
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -19,7 +19,25 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'first_name', 'last_name', 'profile']
-        read_only_fields = ['id']
+        read_only_fields = ['id', 'username', 'email']
+
+    def update(self, instance, validated_data):
+        # Extrair os dados do perfil, se fornecidos
+        profile_data = validated_data.pop('profile', None)
+
+        # Atualizar os campos do usuário
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        # Atualizar ou criar o perfil do usuário
+        if profile_data:
+            profile, created = UserProfile.objects.get_or_create(user=instance)
+            for attr, value in profile_data.items():
+                setattr(profile, attr, value)
+            profile.save()
+
+        return instance
 
 
 class RegisterSerializer(serializers.ModelSerializer):
