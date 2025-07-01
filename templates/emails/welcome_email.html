@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Gemstone</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #4a148c;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .content {
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        .footer {
+            text-align: center;
+            padding: 10px;
+            font-size: 12px;
+            color: #666;
+        }
+        .button {
+            display: inline-block;
+            background-color: #4a148c;
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Welcome to Gemstone!</h1>
+        </div>
+        <div class="content">
+            <p>Hello {% if user_name %}{{ user_name }}{% else %}there{% endif %},</p>
+            
+            <p>Thank you for registering with Gemstone! We're excited to have you join our community.</p>
+            
+            <p>With your new account, you can:</p>
+            <ul>
+                <li>Browse our extensive collection of products</li>
+                <li>Save your favorite items</li>
+                <li>Track your orders</li>
+                <li>And much more!</li>
+            </ul>
+            
+            <p>If you have any questions or need assistance, please don't hesitate to contact our support team.</p>
+            
+            <a href="{{ site_url }}" class="button">Visit Our Site</a>
+            
+            <p>Best regards,<br>
+            The {{ site_name }} Team</p>
+        </div>
+        <div class="footer">
+            <p>&copy; {{ site_name }} {% now "Y" %}. All rights reserved.</p>
+            <p>This email was sent to you because you registered on our website.</p>
+        </div>
+    </div>
+</body>
+</html>

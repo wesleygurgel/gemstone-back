@@ -67,6 +67,17 @@ class RegisterSerializer(serializers.ModelSerializer):
         else:
             UserProfile.objects.create(user=user)
 
+        # Send welcome email
+        try:
+            from lib.email_service import send_welcome_email
+            user_name = f"{user.first_name} {user.last_name}".strip() or None
+            send_welcome_email(user_email=email, user_name=user_name)
+        except Exception as e:
+            # Log the error but don't prevent user creation
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to send welcome email to {email}: {str(e)}")
+
         return user
 
 
