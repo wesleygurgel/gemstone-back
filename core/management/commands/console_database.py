@@ -1,17 +1,17 @@
 import sys
+import json
 import logging
 import random
 from datetime import datetime, timedelta
 from decimal import Decimal
-from django.conf import settings
 from django.core.management.base import BaseCommand
-from django.core.mail import mail_admins
 from django.contrib.auth.models import User
 from django.db import transaction
 from core.utils import console_menu, wait_prompt
 from accounts.models import UserProfile
 from products.models import Category, Product
 from orders.models import Cart, CartItem, Order, OrderItem, Payment
+from lib.ia.deepseek_service import DeepSeekService
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +42,8 @@ class Command(BaseCommand):
 
         actions = [
             [1, 'Populate database with sample data', self.populate_database, options],
+            [2, 'Generate product categories using AI', self.generate_ai_categories, options],
+            [3, 'Generate products for categories using AI', self.generate_ai_products, options],
         ]
 
         console_menu(actions)
@@ -376,8 +378,106 @@ class Command(BaseCommand):
                             status='completed',
                             payment_method=order.payment_method,
                             payment_details={'transaction_date': (
-                                        datetime.now() - timedelta(days=random.randint(1, 30))).isoformat()}
+                                    datetime.now() - timedelta(days=random.randint(1, 30))).isoformat()}
                         )
                         self.debug(f"Created payment for order #{order.id}")
             except User.profile.RelatedObjectDoesNotExist:
                 self.debug(f"Skipping order creation for user {user.username} - no profile found.")
+
+    def generate_ai_categories(self, options):
+        """
+        Generate product categories using AI and add them to the database
+        """
+        self.debug("== Generate product categories using AI")
+
+        # Confirm with the user before proceeding
+        if not wait_prompt("This will generate new product categories using AI. Are you sure you want to proceed?"):
+            self.debug("Operation cancelled by user.")
+            return
+
+        self.debug("Sending prompt to AI service...")
+
+        # The prompt as specified in the requirements
+        prompt = """Considere o seguinte contexto:
+
+Segmento: Comércio internacional de metais preciosos (especialmente ouro).  
+Atuação: Operações logísticas, compras e importação de ouro com atuação global (com foco em Dubai).
+
+Com base nisso, retorne 4 categorias de produtos que sejam relevantes para esse tipo de negócio. O retorno deve ser em formato JSON, com a seguinte estrutura:
+
+{
+  "categorias": ["categoria_1", "categoria_2", "categoria_3", "categoria_4"]
+}
+
+Não inclua explicações ou qualquer texto fora do JSON."""
+
+        # Create an instance of DeepSeekService
+        deepseek_service = DeepSeekService()
+
+        # Define a system message to provide context
+        system_message = "You are an AI assistant specialized in international precious metals trading. Your task is to generate relevant product categories for a business in this industry."
+
+        # Call the AI service with the system message
+        response = deepseek_service.send_prompt(
+            prompt=prompt,
+            system_message=system_message
+        )
+
+        # Check if there was an error
+        if isinstance(response, dict) and 'error' in response:
+            self.debug(f"Error from AI service: {response['error']}")
+            return
+
+        try:
+            # Extract the content from the response
+            ai_content = response.choices[0].message.content
+
+            # Parse the JSON response
+            self.debug("Parsing AI response...")
+
+            # Try to extract JSON from the response if it contains other text
+            try:
+                # Find JSON in the response if there's any text around it
+                start_idx = ai_content.find('{')
+                end_idx = ai_content.rfind('}') + 1
+                if start_idx >= 0 and end_idx > start_idx:
+                    json_str = ai_content[start_idx:end_idx]
+                    categories_data = json.loads(json_str)
+                else:
+                    categories_data = json.loads(ai_content)
+            except json.JSONDecodeError:
+                self.debug(f"Failed to parse JSON from AI response: {ai_content}")
+                return
+
+            # Extract categories from the parsed JSON
+            categories = categories_data.get('categorias', [])
+
+            if not categories:
+                self.debug("No categories found in AI response.")
+                return
+
+            self.debug(f"AI generated {len(categories)} categories: {', '.join(categories)}")
+
+            # Confirm with the user before adding to database
+            if not wait_prompt("Do you want to add these categories to the database?"):
+                self.debug("Operation cancelled by user.")
+                return
+
+            # Add categories to the database
+            with transaction.atomic():
+                for category_name in categories:
+                    # Check if category already exists
+                    if not Category.objects.filter(name=category_name).exists():
+                        category = Category.objects.create(
+                            name=category_name,
+                            description=f"AI-generated category for {category_name} in precious metals trading."
+                        )
+                        self.debug(f"Created category: {category.name}")
+                    else:
+                        self.debug(f"Category {category_name} already exists, skipping.")
+
+            self.debug("AI category generation completed successfully!")
+
+        except Exception as e:
+            self.debug(f"Error processing AI response: {str(e)}")
+            logger.exception("Error in generate_ai_categories")
