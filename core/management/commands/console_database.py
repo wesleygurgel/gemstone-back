@@ -481,3 +481,167 @@ Não inclua explicações ou qualquer texto fora do JSON."""
         except Exception as e:
             self.debug(f"Error processing AI response: {str(e)}")
             logger.exception("Error in generate_ai_categories")
+
+    def generate_ai_products(self, options):
+        """
+        Generate products for existing categories using AI and add them to the database
+        """
+        self.debug("== Generate products for categories using AI")
+
+        # Get all categories from the database
+        categories = Category.objects.all()
+
+        if not categories.exists():
+            self.debug("No categories found in the database. Please create categories first.")
+            return
+
+        # Confirm with the user before proceeding
+        if not wait_prompt("This will generate new products for each category using AI. Are you sure you want to proceed?"):
+            self.debug("Operation cancelled by user.")
+            return
+
+        self.debug(f"Found {categories.count()} categories in the database.")
+
+        # Create an instance of DeepSeekService
+        deepseek_service = DeepSeekService()
+
+        # Define a system message to provide context
+        system_message = "You are an AI assistant specialized in international precious metals trading. Your task is to generate realistic products for each category in this industry."
+
+        # Process each category
+        for category in categories:
+            self.debug(f"Processing category: {category.name} (slug: {category.slug})")
+
+            # Construct the prompt for this category
+            prompt = f"""Considere o seguinte contexto:
+
+Segmento: Comércio internacional de metais preciosos (especialmente ouro).
+Atuação: Operações logísticas, compras e importação de ouro com atuação global (com foco em Dubai).
+Categoria de produto: {category.name}
+Descrição da categoria: {category.description or 'N/A'}
+
+Com base nisso, crie 4 produtos para esta categoria. O retorno deve ser em formato JSON, com a seguinte estrutura:
+
+{{
+  "{category.slug}": [
+    {{
+      "name": "Nome do Produto 1",
+      "description": "Descrição detalhada do produto 1",
+      "price": 1000.00,
+      "price_discount": 900.00,
+      "stock": 50,
+      "available": true,
+      "featured": true
+    }},
+    {{
+      "name": "Nome do Produto 2",
+      "description": "Descrição detalhada do produto 2",
+      "price": 2000.00,
+      "price_discount": null,
+      "stock": 30,
+      "available": true,
+      "featured": false
+    }},
+    ...
+  ]
+}}
+
+Não inclua explicações ou qualquer texto fora do JSON. Os preços devem ser realistas para o tipo de produto."""
+
+            self.debug(f"Sending prompt to AI service for category: {category.name}...")
+
+            # Call the AI service with the system message
+            response = deepseek_service.send_prompt(
+                prompt=prompt,
+                system_message=system_message,
+                max_tokens=2000  # Increase token limit for larger responses
+            )
+
+            # Check if there was an error
+            if isinstance(response, dict) and 'error' in response:
+                self.debug(f"Error from AI service for category {category.name}: {response['error']}")
+                continue  # Skip to the next category
+
+            try:
+                # Extract the content from the response
+                ai_content = response.choices[0].message.content
+
+                # Parse the JSON response
+                self.debug(f"Parsing AI response for category: {category.name}...")
+
+                # Try to extract JSON from the response if it contains other text
+                try:
+                    # Find JSON in the response if there's any text around it
+                    start_idx = ai_content.find('{')
+                    end_idx = ai_content.rfind('}') + 1
+                    if start_idx >= 0 and end_idx > start_idx:
+                        json_str = ai_content[start_idx:end_idx]
+                        products_data = json.loads(json_str)
+                    else:
+                        products_data = json.loads(ai_content)
+                except json.JSONDecodeError:
+                    self.debug(f"Failed to parse JSON from AI response for category {category.name}: {ai_content}")
+                    continue  # Skip to the next category
+
+                # Extract products from the parsed JSON
+                products = products_data.get(category.slug, [])
+
+                if not products:
+                    self.debug(f"No products found in AI response for category {category.name}.")
+                    continue  # Skip to the next category
+
+                self.debug(f"AI generated {len(products)} products for category {category.name}")
+
+                # Display the generated products
+                for i, product in enumerate(products, 1):
+                    self.debug(f"  Product {i}: {product.get('name', 'Unnamed product')}")
+
+                # Confirm with the user before adding to database
+                if not wait_prompt(f"Do you want to add these products to the category '{category.name}'?"):
+                    self.debug(f"Skipping product creation for category {category.name}.")
+                    continue  # Skip to the next category
+
+                # Add products to the database
+                with transaction.atomic():
+                    for product_data in products:
+                        # Check if product already exists
+                        product_name = product_data.get('name')
+                        if not product_name:
+                            self.debug("Product name is missing, skipping.")
+                            continue
+
+                        if Product.objects.filter(name=product_name).exists():
+                            self.debug(f"Product {product_name} already exists, skipping.")
+                            continue
+
+                        # Convert price and price_discount to Decimal
+                        try:
+                            price = Decimal(str(product_data.get('price', 0)))
+
+                            # Handle price_discount which might be null
+                            price_discount_raw = product_data.get('price_discount')
+                            price_discount = Decimal(str(price_discount_raw)) if price_discount_raw is not None else None
+
+                            # Create the product
+                            product = Product.objects.create(
+                                name=product_name,
+                                description=product_data.get('description', ''),
+                                price=price,
+                                price_discount=price_discount,
+                                stock=int(product_data.get('stock', 0)),
+                                available=bool(product_data.get('available', True)),
+                                featured=bool(product_data.get('featured', False)),
+                                category=category
+                            )
+                            self.debug(f"Created product: {product.name} (slug: {product.slug})")
+                        except (ValueError, TypeError) as e:
+                            self.debug(f"Error creating product {product_name}: {str(e)}")
+                            continue
+
+                self.debug(f"Product generation for category {category.name} completed successfully!")
+
+            except Exception as e:
+                self.debug(f"Error processing AI response for category {category.name}: {str(e)}")
+                logger.exception(f"Error in generate_ai_products for category {category.name}")
+
+        self.debug("AI product generation process completed!")
