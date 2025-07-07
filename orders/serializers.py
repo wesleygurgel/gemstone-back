@@ -1,6 +1,7 @@
 from rest_framework import serializers
-from .models import Cart, CartItem, Order, OrderItem, Payment
+from .models import Cart, CartItem, Order, OrderItem, Payment, Wishlist, WishlistItem
 from products.serializers import ProductListSerializer
+from products.models import Product
 
 
 class CartItemSerializer(serializers.ModelSerializer):
@@ -69,3 +70,26 @@ class PaymentSerializer(serializers.ModelSerializer):
         model = Payment
         fields = ['id', 'order', 'payment_id', 'amount', 'status', 'payment_method', 'payment_details', 'created_at']
         read_only_fields = ['order']
+
+
+class WishlistItemSerializer(serializers.ModelSerializer):
+    product = ProductListSerializer(read_only=True)
+    product_id = serializers.PrimaryKeyRelatedField(
+        queryset=Product.objects.all(),
+        write_only=True,
+        source='product'
+    )
+
+    class Meta:
+        model = WishlistItem
+        fields = ['id', 'product', 'product_id']
+        read_only_fields = ['id']
+
+
+class WishlistSerializer(serializers.ModelSerializer):
+    items = WishlistItemSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Wishlist
+        fields = ['id', 'items', 'total_items']
+        read_only_fields = ['id']

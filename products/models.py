@@ -11,14 +11,14 @@ class Category(TimeStampedModel):
     slug = models.SlugField(max_length=100, unique=True)
     description = models.TextField(blank=True, null=True)
     image = models.ImageField(upload_to='categories/', blank=True, null=True)
-    
+
     class Meta:
         verbose_name_plural = 'Categories'
         ordering = ['name']
-    
+
     def __str__(self):
         return self.name
-    
+
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.name)
@@ -38,13 +38,15 @@ class Product(TimeStampedModel):
     available = models.BooleanField(default=True)
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='products')
     featured = models.BooleanField(default=False)
-    
+    sales_count = models.PositiveIntegerField(default=0)
+    view_count = models.PositiveIntegerField(default=0)
+
     class Meta:
         ordering = ['-created_at']
-    
+
     def __str__(self):
         return self.name
-    
+
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.name)
@@ -59,9 +61,9 @@ class ProductImage(TimeStampedModel):
     image = models.ImageField(upload_to='products/')
     alt_text = models.CharField(max_length=200, blank=True, null=True)
     is_main = models.BooleanField(default=False)
-    
+
     class Meta:
         ordering = ['is_main', 'created_at']
-    
+
     def __str__(self):
         return f"Image for {self.product.name}"

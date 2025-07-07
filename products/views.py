@@ -63,7 +63,7 @@ class ProductViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['category', 'available', 'featured']
     search_fields = ['name', 'description']
-    ordering_fields = ['name', 'price', 'created_at']
+    ordering_fields = ['name', 'price', 'created_at', 'sales_count', 'view_count']
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -102,6 +102,13 @@ class ProductViewSet(viewsets.ModelViewSet):
                 return []
 
         return super().get_authenticators()
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.view_count += 1
+        instance.save()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
     @action(detail=True, methods=['post'], parser_classes=[MultiPartParser, FormParser])
     def upload_image(self, request, slug=None):
