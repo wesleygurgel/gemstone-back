@@ -1,1 +1,1 @@
-web: gunicorn gemstone.wsgi
+web: python manage.py collectstatic --noinput && gunicorn gemstone.wsgi
