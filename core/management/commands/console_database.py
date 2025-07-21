@@ -1,15 +1,18 @@
-import sys
 import json
 import logging
 import random
+import os
+import requests
+import tempfile
 from datetime import datetime, timedelta
 from decimal import Decimal
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User
 from django.db import transaction
+from django.core.files import File
 from core.utils import console_menu, wait_prompt
 from accounts.models import UserProfile
-from products.models import Category, Product
+from products.models import Category, Product, ProductImage
 from orders.models import Cart, CartItem, Order, OrderItem, Payment
 from lib.ia.deepseek_service import DeepSeekService
 
@@ -44,6 +47,7 @@ class Command(BaseCommand):
             [1, 'Populate database with sample data', self.populate_database, options],
             [2, 'Generate product categories using AI', self.generate_ai_categories, options],
             [3, 'Generate products for categories using AI', self.generate_ai_products, options],
+            [4, 'Generate product images using AI', self.generate_ai_product_images, options],
         ]
 
         console_menu(actions)
@@ -496,7 +500,8 @@ Não inclua explicações ou qualquer texto fora do JSON."""
             return
 
         # Confirm with the user before proceeding
-        if not wait_prompt("This will generate new products for each category using AI. Are you sure you want to proceed?"):
+        if not wait_prompt(
+                "This will generate new products for each category using AI. Are you sure you want to proceed?"):
             self.debug("Operation cancelled by user.")
             return
 
@@ -620,7 +625,8 @@ Não inclua explicações ou qualquer texto fora do JSON. Os preços devem ser r
 
                             # Handle price_discount which might be null
                             price_discount_raw = product_data.get('price_discount')
-                            price_discount = Decimal(str(price_discount_raw)) if price_discount_raw is not None else None
+                            price_discount = Decimal(
+                                str(price_discount_raw)) if price_discount_raw is not None else None
 
                             # Create the product
                             product = Product.objects.create(
@@ -645,3 +651,151 @@ Não inclua explicações ou qualquer texto fora do JSON. Os preços devem ser r
                 logger.exception(f"Error in generate_ai_products for category {category.name}")
 
         self.debug("AI product generation process completed!")
+
+    def generate_ai_product_images(self, options):
+        """
+        Generate images for products using AI and associate them with products
+        """
+        self.debug("== Generate product images using AI")
+
+        # Get all products from the database
+        products = Product.objects.all()
+
+        if not products.exists():
+            self.debug("No products found in the database. Please create products first.")
+            return
+
+        # Confirm with the user before proceeding
+        if not wait_prompt(
+                "This will generate images for products using AI. Are you sure you want to proceed?"):
+            self.debug("Operation cancelled by user.")
+            return
+
+        self.debug(f"Found {products.count()} products in the database.")
+
+        # Create an instance of DeepSeekService
+        deepseek_service = DeepSeekService()
+
+        # Define a system message to provide context
+        system_message = "You are an AI assistant specialized in finding high-quality horizontal images for products. Your task is to provide Unsplash image links that are relevant to the product names and descriptions."
+
+        # Process each product
+        for product in products:
+            self.debug(f"Processing product: {product.name} (slug: {product.slug})")
+
+            # Check how many images the product already has
+            image_count = product.images.count()
+            self.debug(f"Product has {image_count} images")
+
+            # If the product already has 2 or more images, skip it
+            if image_count >= 2:
+                self.debug(f"Product {product.name} already has {image_count} images, skipping.")
+                continue
+
+            # Calculate how many images we need to add
+            images_needed = 2 - image_count
+            self.debug(f"Need to add {images_needed} images for product {product.name}")
+
+            # For each image needed
+            for i in range(images_needed):
+                # Try up to 3 times to get a valid image link
+                for attempt in range(3):
+                    self.debug(f"Attempt {attempt + 1} to get image for product {product.name}")
+
+                    # Construct the prompt for this product
+                    prompt = f"""I need a high-quality horizontal image for a product called "{product.name}".
+Description: {product.description}
+
+Please provide a direct link to a relevant image on Unsplash that represents this product well.
+The image should be in landscape/horizontal orientation.
+Return ONLY the direct image URL from Unsplash, nothing else."""
+
+                    self.debug(f"Sending prompt to AI service for product: {product.name}...")
+
+                    # Call the AI service with the system message
+                    response = deepseek_service.send_prompt(
+                        prompt=prompt,
+                        system_message=system_message,
+                        temperature=0.7
+                    )
+
+                    # Check if there was an error
+                    if isinstance(response, dict) and 'error' in response:
+                        self.debug(f"Error from AI service for product {product.name}: {response['error']}")
+                        continue  # Try again
+
+                    try:
+                        # Extract the content from the response
+                        ai_content = response.choices[0].message.content.strip()
+
+                        # Clean up the response to get just the URL
+                        image_url = ai_content
+                        # Remove any markdown formatting if present
+                        if image_url.startswith('!['):
+                            image_url = image_url.split('](')[1].split(')')[0]
+                        # Remove any quotes or extra text
+                        image_url = image_url.strip('"\'')
+                        # If there are multiple lines, take the first URL-like line
+                        if '\n' in image_url:
+                            for line in image_url.split('\n'):
+                                if 'http' in line and ('unsplash.com' in line or '.jpg' in line or '.png' in line):
+                                    image_url = line.strip()
+                                    break
+
+                        self.debug(f"AI provided image URL: {image_url}")
+
+                        # Try to download the image
+                        try:
+                            # Download the image
+                            self.debug(f"Downloading image from {image_url}...")
+                            response = requests.get(image_url, stream=True, timeout=10)
+
+                            # Check if the download was successful
+                            if response.status_code != 200:
+                                self.debug(f"Failed to download image: HTTP status {response.status_code}")
+                                continue  # Try again
+
+                            # Create a temporary file to store the image
+                            with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+                                for chunk in response.iter_content(chunk_size=1024):
+                                    if chunk:
+                                        temp_file.write(chunk)
+
+                            # Create a ProductImage instance
+                            with open(temp_file.name, 'rb') as f:
+                                # Determine if this should be the main image
+                                is_main = image_count == 0 and i == 0
+
+                                # Create the product image
+                                product_image = ProductImage(
+                                    product=product,
+                                    alt_text=f"Image for {product.name}",
+                                    is_main=is_main
+                                )
+
+                                # Save the image file to the product_image instance
+                                filename = f"{product.slug}_{datetime.now().strftime('%Y%m%d%H%M%S')}.jpg"
+                                product_image.image.save(filename, File(f), save=True)
+
+                                self.debug(f"Created image for product {product.name} (is_main: {is_main})")
+
+                            # Clean up the temporary file
+                            os.unlink(temp_file.name)
+
+                            # Break out of the retry loop since we succeeded
+                            break
+
+                        except Exception as e:
+                            self.debug(f"Error downloading or saving image: {str(e)}")
+                            if attempt == 2:  # Last attempt
+                                self.debug(f"Failed to download image after 3 attempts for product {product.name}")
+                            continue  # Try again if we have attempts left
+
+                    except Exception as e:
+                        self.debug(f"Error processing AI response for product {product.name}: {str(e)}")
+                        logger.exception(f"Error in generate_ai_product_images for product {product.name}")
+                        if attempt == 2:  # Last attempt
+                            self.debug(f"Failed to process AI response after 3 attempts for product {product.name}")
+                        continue  # Try again if we have attempts left
+
+        self.debug("AI product image generation process completed!")
